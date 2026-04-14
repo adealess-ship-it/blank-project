@@ -374,8 +374,26 @@
       "Bash(cp /home/runner/workspace/.claude/settings.local.json /tmp/blank-project/.claude/)",
       "Bash(cp /home/runner/workspace/.github/workflows/e2e_screenshot.yml /tmp/blank-project/.github/workflows/)",
       "Bash(cp /home/runner/workspace/poll_qa.sh /tmp/blank-project/)",
-      "Bash(cp /home/runner/workspace/artifacts/api-server/public/home.html /tmp/blank-project/artifacts/api-server/public/)"
+      "Bash(cp /home/runner/workspace/artifacts/api-server/public/home.html /tmp/blank-project/artifacts/api-server/public/)",
+      "Bash(mkdir -p /tmp/blank-project/scripts)",
+      "Bash(cp /home/runner/workspace/scripts/pre-commit-check.sh /tmp/blank-project/scripts/)",
+      "Bash(cp /home/runner/workspace/.claude/settings.local.json /tmp/blank-project/.claude/settings.local.json)"
     ],
     "deny": []
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash scripts/pre-commit-check.sh",
+            "if": "Bash(git commit *)",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
   }
 }
