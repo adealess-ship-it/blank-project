@@ -1,0 +1,180 @@
+name: E2E Screenshot Tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/e2e_screenshot.yml'
+      - 'artifacts/api-server/public/**'
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Frontend base URL"
+        required: false
+
+permissions:
+  contents: read
+
+env:
+  BASE_URL: ${{ inputs.base_url || secrets.REPLIT_DEV_URL || secrets.REPLIT_DEV_DOMAIN }}
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Playwright + ffmpeg
+        run: |
+          npm init -y
+          npm install @playwright/test
+          npx playwright install chromium --with-deps
+          sudo apt-get install -y ffmpeg
+
+      - name: E2E Screenshot + VDO Tests
+        run: |
+          node << 'SCRIPT'
+          const { chromium } = require('@playwright/test');
+          const fs = require('fs');
+          const { execSync } = require('child_process');
+
+          (async () => {
+            const base = process.env.BASE_URL.replace(/\/$/, '');
+            let shotNum = 0;
+            const log = [];
+
+            function ss(name) { return String(++shotNum).padStart(2,'0') + '_' + name + '.png'; }
+            function logEntry(msg) { log.push('[' + new Date().toISOString().slice(11,19) + '] ' + msg); console.log(msg); }
+
+            // ── Browser with VDO recording ──
+            const browser = await chromium.launch();
+            const context = await browser.newContext({
+              viewport: { width: 1280, height: 800 },
+              recordVideo: { dir: './videos/', size: { width: 1280, height: 800 } }
+            });
+            const page = await context.newPage();
+            page.on('console', msg => { if (msg.type() === 'error') console.log('[console.error]', msg.text()); });
+
+            // ═══════════════════════════════════
+            // STEP 1: Home Page
+            // ═══════════════════════════════════
+            logEntry('=== STEP 1: Home Page ===');
+            await page.goto(base + '/', { waitUntil: 'networkidle', timeout: 30000 });
+            await page.waitForTimeout(2000);
+            await page.screenshot({ path: ss('home_page') });
+            logEntry('  Home page loaded, URL: ' + page.url());
+
+            // Check server status indicator
+            const statusText = await page.evaluate(() => {
+              const el = document.getElementById('statusLabel');
+              return el ? el.textContent : 'not found';
+            });
+            logEntry('  Server status: ' + statusText);
+
+            // Check Admin Login button exists
+            const adminBtn = await page.$('a[href="/home/adminDev"]');
+            logEntry('  Admin Login button: ' + (adminBtn ? 'YES' : 'NO'));
+
+            // ═══════════════════════════════════
+            // STEP 2: Navigate to adminDev
+            // ═══════════════════════════════════
+            logEntry('=== STEP 2: Admin Dev Dashboard ===');
+            if (adminBtn) {
+              await adminBtn.click();
+              await page.waitForTimeout(3000);
+            } else {
+              await page.goto(base + '/home/adminDev', { waitUntil: 'networkidle', timeout: 30000 });
+              await page.waitForTimeout(3000);
+            }
+            await page.screenshot({ path: ss('adminDev_page') });
+            logEntry('  adminDev loaded, URL: ' + page.url());
+
+            // Check dashboard features
+            const features = await page.evaluate(() => {
+              return {
+                dropZone: !!document.getElementById('drop-zone'),
+                gallery: !!document.querySelector('.gallery-grid, .gallery-list'),
+                sidebar: !!document.querySelector('.sidebar'),
+                sessions: !!document.getElementById('sessionList'),
+                system: !!document.getElementById('cpuVal'),
+                github: !!document.getElementById('ghList'),
+              };
+            });
+            logEntry('  Features: ' + JSON.stringify(features));
+
+            // ═══════════════════════════════════
+            // STEP 3: Test navigation back
+            // ═══════════════════════════════════
+            logEntry('=== STEP 3: Navigation Test ===');
+            await page.goto(base + '/', { waitUntil: 'networkidle', timeout: 20000 });
+            await page.waitForTimeout(2000);
+            await page.screenshot({ path: ss('back_to_home') });
+            logEntry('  Back to home OK');
+
+            // ═══════════════════════════════════
+            // STEP 4: Health API check
+            // ═══════════════════════════════════
+            logEntry('=== STEP 4: Health API ===');
+            const healthResp = await page.evaluate(async () => {
+              try {
+                const r = await fetch('/api/health');
+                return { status: r.status, ok: r.ok };
+              } catch (e) {
+                return { error: e.message };
+              }
+            });
+            logEntry('  Health: ' + JSON.stringify(healthResp));
+
+            // ═══════════════════════════════════
+            // Close + Extract VDO frames
+            // ═══════════════════════════════════
+            await page.close(); // triggers video save
+            await context.close();
+
+            // Extract frames from recorded video
+            logEntry('=== VDO to Screenshot ===');
+            const videos = fs.readdirSync('./videos/').filter(f => f.endsWith('.webm'));
+            for (const v of videos) {
+              const vPath = './videos/' + v;
+              const outPath = ss('vdo_frame') ;
+              try {
+                execSync('ffmpeg -i ' + vPath + ' -vf "select=eq(n\\,30)" -vframes 1 ' + outPath + ' -y 2>/dev/null');
+                logEntry('  Extracted frame from ' + v + ' → ' + outPath);
+              } catch (e) {
+                logEntry('  VDO extract failed: ' + e.message);
+              }
+            }
+
+            // ═══════════════════════════════════
+            // SUMMARY
+            // ═══════════════════════════════════
+            logEntry('');
+            logEntry('═══ QA SUMMARY ═══');
+            logEntry('Total screenshots: ' + shotNum);
+            logEntry('');
+
+            fs.writeFileSync('e2e_log.txt', log.join('\n'));
+            await browser.close();
+            console.log('\nDone. ' + shotNum + ' screenshots taken.');
+          })();
+          SCRIPT
+        env:
+          BASE_URL: ${{ env.BASE_URL }}
+
+      - name: Upload screenshots + videos
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-screenshots-${{ github.run_number }}
+          path: |
+            *.png
+            videos/
+            e2e_log.txt
+          retention-days: 7
+          if-no-files-found: warn

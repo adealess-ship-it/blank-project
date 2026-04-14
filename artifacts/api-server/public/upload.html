@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — Admin Dev</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0d1117;color:#e6edf3;min-height:100vh;display:flex;flex-direction:column}
+
+/* Accent bar */
+.accent-bar{height:3px;background:linear-gradient(90deg,#58a6ff 0%,#3fb950 40%,#f0883e 70%,#f85149 100%)}
+
+/* Nav */
+nav{background:#161b22;border-bottom:1px solid #30363d;padding:0 20px;display:flex;align-items:center;height:48px;gap:16px}
+nav .brand{color:#58a6ff;font-size:16px;font-weight:700;text-decoration:none}
+nav .brand-sub{color:#8b949e;font-size:12px;margin-left:4px}
+nav .nav-right{margin-left:auto;display:flex;align-items:center;gap:12px}
+.nav-badge{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600}
+.nav-badge.ok{background:#0d3117;color:#3fb950;border:1px solid #238636}
+.nav-badge.err{background:#2d1117;color:#f85149;border:1px solid #da3633}
+.nav-link{color:#8b949e;font-size:13px;text-decoration:none;transition:color .15s}
+.nav-link:hover{color:#e6edf3}
+#avatarBtn{width:28px;height:28px;border-radius:50%;background:#21262d;border:1px solid #30363d;color:#e6edf3;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center}
+#avatarBtn:hover{border-color:#58a6ff}
+
+/* Layout */
+.main-layout{display:flex;flex:1;overflow:hidden}
+.sidebar{width:320px;min-width:320px;background:#0d1117;border-right:1px solid #21262d;overflow-y:auto;padding:16px}
+.content{flex:1;overflow-y:auto;padding:16px 20px}
+
+/* Sidebar sections */
+.sb-section{margin-bottom:20px}
+.sb-title{font-size:11px;font-weight:600;color:#8b949e;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.sb-title .dot{width:6px;height:6px;border-radius:50%;display:inline-block}
+.sb-title .dot.green{background:#3fb950}
+.sb-title .dot.blue{background:#58a6ff}
+.sb-title .dot.orange{background:#f0883e}
+.sb-title .dot.red{background:#f85149}
+
+/* Session cards */
+.sess-card{background:#161b22;border:1px solid #21262d;border-radius:8px;padding:10px 12px;margin-bottom:8px;font-size:12px}
+.sess-card .sess-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.sess-card .pid{font-family:monospace;color:#58a6ff;font-weight:600}
+.sess-card .status{font-size:10px;padding:1px 6px;border-radius:4px;background:#0d3117;color:#3fb950}
+.sess-card .sess-meta{color:#8b949e;font-size:11px;display:flex;gap:12px}
+.sess-card .sess-meta span{display:flex;align-items:center;gap:3px}
+
+/* Service status */
+.svc-row{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:12px;border-bottom:1px solid #161b22}
+.svc-row:last-child{border:none}
+.svc-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.svc-dot.running{background:#3fb950}
+.svc-dot.stopped{background:#f85149}
+.svc-dot.unknown{background:#484f58}
+.svc-name{color:#e6edf3;font-weight:500;flex:1}
+.svc-label{color:#8b949e;font-size:11px}
+
+/* Git info */
+.git-info{background:#161b22;border:1px solid #21262d;border-radius:8px;padding:10px 12px;font-size:12px}
+.git-row{display:flex;justify-content:space-between;padding:3px 0;color:#8b949e}
+.git-row .val{color:#e6edf3;font-family:monospace;font-size:11px;text-align:right;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* GitHub Actions */
+.gh-run{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:12px;border-bottom:1px solid #161b22}
+.gh-run:last-child{border:none}
+.gh-icon{font-size:14px}
+.gh-name{flex:1;color:#e6edf3}
+.gh-name a{color:#58a6ff;text-decoration:none;font-size:11px}
+.gh-name a:hover{text-decoration:underline}
+.gh-time{color:#484f58;font-size:10px}
+
+/* Stats bar */
+.stats-bar{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.stat-card{background:#161b22;border:1px solid #21262d;border-radius:8px;padding:12px 16px;flex:1;min-width:140px}
+.stat-card .stat-label{font-size:11px;color:#8b949e;margin-bottom:4px}
+.stat-card .stat-value{font-size:24px;font-weight:700;font-family:monospace}
+.stat-card .stat-value.blue{color:#58a6ff}
+.stat-card .stat-value.green{color:#3fb950}
+.stat-card .stat-value.orange{color:#f0883e}
+
+/* Drop zone (compact) */
+#drop-zone{border:2px dashed #30363d;border-radius:8px;padding:16px;text-align:center;cursor:pointer;transition:all .2s;position:relative;margin-bottom:16px}
+#drop-zone.dragover{border-color:#58a6ff;background:rgba(88,166,255,.06)}
+#drop-zone p{color:#8b949e;font-size:12px}
+#drop-zone .formats{color:#484f58;font-size:10px;margin-top:4px}
+#drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+
+/* Toolbar */
+.toolbar{display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.toolbar h2{font-size:15px;font-weight:600;flex:1}
+.filter-btns{display:flex;gap:4px}
+.filter-btn{background:#21262d;border:1px solid #30363d;color:#8b949e;padding:4px 10px;font-size:11px;border-radius:4px;cursor:pointer;transition:all .15s}
+.filter-btn:hover,.filter-btn.active{background:#30363d;color:#e6edf3;border-color:#484f58}
+.view-toggle{display:flex;border:1px solid #30363d;border-radius:4px;overflow:hidden}
+.view-btn{background:#21262d;border:none;color:#8b949e;padding:4px 8px;font-size:13px;cursor:pointer}
+.view-btn.active{background:#30363d;color:#e6edf3}
+.file-count{font-size:11px;color:#8b949e}
+
+/* Gallery grid */
+.gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.gallery-item{background:#161b22;border:1px solid #21262d;border-radius:8px;overflow:hidden;cursor:pointer;transition:border-color .15s}
+.gallery-item:hover{border-color:#30363d}
+.gallery-item img{width:100%;height:140px;object-fit:cover;display:block;background:#0d1117}
+.gallery-item .gi-info{padding:8px 10px}
+.gallery-item .gi-name{font-size:11px;color:#e6edf3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gallery-item .gi-meta{font-size:10px;color:#484f58;margin-top:2px;display:flex;justify-content:space-between}
+.gallery-item .gi-source{font-size:9px;padding:1px 5px;border-radius:3px;background:#21262d;color:#8b949e}
+
+/* Gallery list */
+.gallery-list{display:flex;flex-direction:column;gap:4px}
+.list-item{display:flex;align-items:center;gap:10px;background:#161b22;border:1px solid #21262d;border-radius:6px;padding:8px 12px;cursor:pointer;transition:border-color .15s}
+.list-item:hover{border-color:#30363d}
+.list-item img{width:40px;height:40px;object-fit:cover;border-radius:4px;flex-shrink:0}
+.list-item .li-name{flex:1;font-size:12px;color:#e6edf3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.list-item .li-source{font-size:10px;padding:1px 5px;border-radius:3px;background:#21262d;color:#8b949e}
+.list-item .li-size{font-size:11px;color:#484f58;min-width:60px;text-align:right}
+.list-item .li-date{font-size:11px;color:#484f58;min-width:110px;text-align:right}
+.list-item .li-del{background:none;border:none;color:#484f58;cursor:pointer;font-size:13px;padding:2px 6px;border-radius:3px}
+.list-item .li-del:hover{color:#f85149;background:#1c1215}
+
+/* Lightbox */
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:none;align-items:center;justify-content:center;flex-direction:column}
+.lightbox.show{display:flex}
+.lightbox img{max-width:90vw;max-height:80vh;object-fit:contain;border-radius:8px}
+.lightbox .lb-name{color:#e6edf3;font-size:13px;margin-top:12px}
+.lightbox .lb-close{position:absolute;top:20px;right:24px;background:none;border:none;color:#e6edf3;font-size:28px;cursor:pointer}
+
+/* Toast */
+.toast{position:fixed;bottom:20px;right:20px;background:#161b22;border:1px solid #30363d;border-radius:8px;padding:10px 14px;font-size:12px;box-shadow:0 4px 12px rgba(0,0,0,.4);z-index:2000;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1;pointer-events:auto}
+.toast.ok{border-color:#238636}
+.toast.err{border-color:#da3633}
+
+/* Path + Copy */
+.gi-path{display:flex;align-items:center;gap:4px;padding:3px 8px;border-top:1px solid #21262d}
+.gi-path-text{font-size:9px;color:#484f58;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:monospace}
+.gi-copy,.li-copy{font-size:9px;padding:1px 5px;background:none;border:1px solid #30363d;color:#8b949e;border-radius:3px;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.gi-copy:hover,.li-copy:hover{color:#58a6ff;border-color:#58a6ff}
+.li-path{font-size:10px;color:#484f58;font-family:monospace;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb-path{display:flex;align-items:center;gap:8px;margin-top:8px}
+.lb-path span{font-family:monospace;font-size:11px;color:#8b949e;max-width:600px;overflow:hidden;text-overflow:ellipsis}
+.lb-path button{font-size:11px;padding:3px 10px;background:none;border:1px solid #30363d;color:#8b949e;border-radius:4px;cursor:pointer}
+.lb-path button:hover{color:#58a6ff;border-color:#58a6ff}
+
+/* Activity chart */
+.activity-chart-wrap{margin-bottom:16px;background:#161b22;border:1px solid #21262d;border-radius:8px;padding:12px 12px 8px}
+.activity-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.activity-chart-title{font-size:11px;color:#8b949e}
+.activity-legend{display:flex;gap:14px;font-size:10px;color:#8b949e}
+.activity-tooltip{position:absolute;background:#1c2129;border:1px solid #30363d;border-radius:6px;padding:6px 10px;font-size:11px;color:#e6edf3;pointer-events:none;z-index:100;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.4);display:none}
+.leg-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px;vertical-align:middle}
+
+/* Empty */
+.empty-state{text-align:center;padding:40px;color:#484f58;font-size:13px}
+
+/* Refresh button */
+.refresh-timer{font-size:10px;color:#8b949e;display:flex;align-items:center;gap:5px;cursor:pointer;background:none;border:1px solid #30363d;border-radius:6px;padding:3px 10px;transition:all .15s}
+.refresh-timer:hover{color:#58a6ff;border-color:#58a6ff}
+.refresh-timer:active{background:#21262d}
+.refresh-timer.loading{color:#58a6ff;pointer-events:none}
+.refresh-dot{width:6px;height:6px;border-radius:50%;background:#3fb950;flex-shrink:0}
+.refresh-timer.loading .refresh-dot{background:#58a6ff;animation:pulse .6s infinite}
+@keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}
+
+/* Admin gate */
+.admin-gate{display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:12px}
+.admin-gate h2{color:#f85149;font-size:18px}
+.admin-gate p{color:#8b949e;font-size:13px}
+</style>
+</head>
+<body>
+
+<div class="accent-bar"></div>
+
+<nav>
+  <a class="brand" href="/" style="font-size:13px;font-weight:500;color:#8b949e">Blank Project</a>
+  <span class="brand-sub">Admin Dev</span>
+  <div class="nav-right">
+    <button class="refresh-timer" id="refreshTimer" title="Click to refresh now"><span class="refresh-dot"></span><span id="refreshLabel">Refresh</span></button>
+    <a class="nav-link" href="/">Home</a>
+    <div style="position:relative">
+      <button id="avatarBtn" title="Account">?</button>
+      <div id="avatarDropdown" style="display:none;position:absolute;top:calc(100% + 8px);right:0;background:#161b22;border:1px solid #30363d;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.5);min-width:200px;z-index:1000;padding:8px 0">
+        <div style="padding:10px 14px 8px;border-bottom:1px solid #21262d">
+          <div style="font-size:13px;font-weight:600;color:#e6edf3;margin-bottom:2px" id="avName">—</div>
+          <div style="font-size:12px;color:#8b949e" id="avEmail">—</div>
+        </div>
+        <hr style="border:none;border-top:1px solid #21262d;margin:4px 0">
+        <a style="display:block;padding:8px 14px;font-size:13px;color:#e6edf3;text-decoration:none;cursor:pointer" href="/" onmouseover="this.style.background='#21262d'" onmouseout="this.style.background=''">🏠 Home</a>
+        <a style="display:block;padding:8px 14px;font-size:13px;color:#e6edf3;text-decoration:none;cursor:pointer" href="/home/adminDev" onmouseover="this.style.background='#21262d'" onmouseout="this.style.background=''">📁 Dashboard</a>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div id="adminGate" class="admin-gate" style="display:none">
+  <h2>Admin Only</h2>
+  <p>This page requires admin access.</p>
+  <a class="nav-link" href="/" style="color:#58a6ff;margin-top:8px">Back to Home</a>
+</div>
+
+<div class="main-layout" id="mainLayout">
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar">
+    <!-- Claude Sessions -->
+    <div class="sb-section">
+      <div class="sb-title"><span class="dot green"></span>Claude Sessions</div>
+      <div id="sessionsList"><div style="color:#484f58;font-size:12px">Loading...</div></div>
+    </div>
+
+    <!-- Services -->
+    <div class="sb-section">
+      <div class="sb-title"><span class="dot blue"></span>Services</div>
+      <div id="servicesList"><div style="color:#484f58;font-size:12px">Loading...</div></div>
+    </div>
+
+    <!-- Git -->
+    <div class="sb-section">
+      <div class="sb-title"><span class="dot orange"></span>Git</div>
+      <div id="gitInfo" class="git-info"><div style="color:#484f58;font-size:12px">Loading...</div></div>
+    </div>
+
+    <!-- GitHub Actions -->
+    <div class="sb-section">
+      <div class="sb-title"><span class="dot red"></span>GitHub Actions</div>
+      <div id="ghActions"><div style="color:#484f58;font-size:12px">Loading...</div></div>
+    </div>
+
+    <!-- Job Queue & CPU -->
+    <div class="sb-section">
+      <div class="sb-title"><span class="dot blue"></span>Job Queue & CPU</div>
+      <div id="queueInfo" class="git-info"><div style="color:#484f58;font-size:12px">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+    <!-- Stats bar -->
+    <div class="stats-bar" id="statsBar">
+      <div class="stat-card"><div class="stat-label">Claude Sessions</div><div class="stat-value blue" id="statSessions">-</div></div>
+      <div class="stat-card"><div class="stat-label">Screenshots</div><div class="stat-value green" id="statScreenshots">-</div></div>
+      <div class="stat-card"><div class="stat-label">Uploads</div><div class="stat-value orange" id="statUploads">-</div></div>
+      <div class="stat-card"><div class="stat-label">Today Commits</div><div class="stat-value blue" id="statCommits">-</div></div>
+    </div>
+
+    <!-- Activity chart -->
+    <div class="activity-chart-wrap" style="position:relative">
+      <div class="activity-header">
+        <div class="activity-chart-title">Activity (7 days, every 6h)</div>
+        <div class="activity-legend">
+          <span><span class="leg-dot" style="background:#58a6ff"></span>commits</span>
+          <span><span class="leg-dot" style="background:#3fb950"></span>screenshots</span>
+        </div>
+      </div>
+      <canvas id="activityChart" height="140"></canvas>
+      <div class="activity-tooltip" id="activityTooltip"></div>
+    </div>
+
+    <!-- System History Chart -->
+    <div class="activity-chart-wrap" style="position:relative">
+      <div class="activity-header">
+        <div class="activity-chart-title">System Monitor & Queue</div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <div class="activity-legend">
+            <span><span class="leg-dot" style="background:#f85149"></span>CPU%</span>
+            <span><span class="leg-dot" style="background:#58a6ff"></span>RAM%</span>
+          </div>
+          <select id="sysHistoryRange" style="background:#21262d;border:1px solid #30363d;color:#8b949e;font-size:10px;padding:2px 6px;border-radius:4px;cursor:pointer">
+            <option value="1">1h</option>
+            <option value="3">3h</option>
+            <option value="6">6h</option>
+            <option value="12">12h</option>
+            <option value="24">24h</option>
+            <option value="168">7d</option>
+          </select>
+        </div>
+      </div>
+      <canvas id="sysHistoryChart" height="100"></canvas>
+      <div class="activity-tooltip" id="sysTooltip"></div>
+    </div>
+
+    <!-- Wait Time Chart -->
+    <div class="activity-chart-wrap" style="position:relative">
+      <div class="activity-header">
+        <div class="activity-chart-title">Service Wait Time (avg seconds per job)</div>
+        <div class="activity-legend">
+          <span><span class="leg-dot" style="background:#f0883e"></span>task A</span>
+          <span><span class="leg-dot" style="background:#a371f7"></span>task B</span>
+          <span><span class="leg-dot" style="background:#3fb950"></span>task C</span>
+        </div>
+      </div>
+      <canvas id="waitTimeChart" height="80"></canvas>
+      <div class="activity-tooltip" id="waitTooltip"></div>
+    </div>
+
+    <!-- Drop zone -->
+    <div id="drop-zone">
+      <p>Drop files here, Ctrl+V paste, or click to browse</p>
+      <div class="formats">PNG, JPG, GIF, WebP, SVG, BMP, Markdown (.md) — max 10 MB</div>
+      <input type="file" accept="image/*,.md" multiple>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <h2>Screenshots & Files</h2>
+      <span class="file-count" id="fileCount"></span>
+      <div class="filter-btns">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="screenshot">Screenshots</button>
+        <button class="filter-btn" data-filter="upload">Uploads</button>
+      </div>
+      <div class="view-toggle">
+        <button class="view-btn active" data-view="grid" title="Grid">&#9638;</button>
+        <button class="view-btn" data-view="list" title="List">&#9776;</button>
+      </div>
+    </div>
+
+    <!-- Gallery -->
+    <div id="gallery" class="gallery-grid"></div>
+    <div class="empty-state" id="emptyState" style="display:none">No files found</div>
+  </div>
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox">
+  <button class="lb-close" id="lbClose">&times;</button>
+  <img id="lbImg" src="" alt="">
+  <div class="lb-name" id="lbName"></div>
+  <div class="lb-path">
+    <span id="lbPath"></span>
+    <button id="lbCopy">Copy path</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+(function() {
+  const jwt = localStorage.getItem('pt_token');
+
+  // Declare refresh vars BEFORE any async call to avoid TDZ
+  let refreshCountdown = 60;
+  let refreshInterval = null;
+
+  // Skip auth — show dashboard directly
+  showDashboard();
+
+  function showGate() {
+    document.getElementById('adminGate').style.display = 'flex';
+    document.getElementById('mainLayout').style.display = 'none';
+  }
+
+  // Avatar dropdown toggle
+  function populateDropdown(d) {
+    const avName = document.getElementById('avName');
+    const avEmail = document.getElementById('avEmail');
+    if (avName) avName.textContent = d.display_name || d.email || '—';
+    if (avEmail) avEmail.textContent = d.email || '—';
+    if (d.role_admin) { const al = document.getElementById('avAdminLink'); if (al) al.style.display = 'block'; }
+  }
+  const _avatarBtn = document.getElementById('avatarBtn');
+  const _avatarDD = document.getElementById('avatarDropdown');
+  if (_avatarBtn && _avatarDD) {
+    _avatarBtn.addEventListener('click', e => { e.stopPropagation(); _avatarDD.style.display = _avatarDD.style.display === 'none' ? 'block' : 'none'; });
+    document.addEventListener('click', () => { _avatarDD.style.display = 'none'; });
+    _avatarDD.addEventListener('click', e => e.stopPropagation());
+  }
+  const _avLogout = document.getElementById('avLogout');
+  if (_avLogout) _avLogout.addEventListener('click', () => { localStorage.removeItem('pt_token'); window.location.href = '/login'; });
+
+  // Populate dropdown on user fetch
+  if (jwt) {
+    fetch('/pytrigger/me', { headers: { Authorization: 'Bearer ' + jwt } })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) populateDropdown(d); })
+      .catch(e => console.warn('fetch:', e.message || e));
+  }
+
+  function doRefresh() {
+    const btn = document.getElementById('refreshTimer');
+    const label = document.getElementById('refreshLabel');
+    btn.classList.add('loading');
+    label.textContent = 'Refreshing...';
+    loadAll();
+    setTimeout(() => {
+      btn.classList.remove('loading');
+      refreshCountdown = 60;
+      label.textContent = '60s';
+    }, 1200);
+  }
+
+  function showDashboard() {
+    document.getElementById('adminGate').style.display = 'none';
+    document.getElementById('mainLayout').style.display = 'flex';
+    loadAll();
+
+    // Countdown timer
+    refreshInterval = setInterval(() => {
+      refreshCountdown--;
+      if (refreshCountdown <= 0) {
+        doRefresh();
+      } else {
+        document.getElementById('refreshLabel').textContent = refreshCountdown + 's';
+      }
+    }, 1000);
+
+    // Manual refresh on click
+    document.getElementById('refreshTimer').addEventListener('click', () => {
+      doRefresh();
+    });
+  }
+
+  // State
+  let allFiles = [];
+  let currentFilter = 'all';
+  let currentView = 'grid';
+  let displayCount = 20;
+  const PAGE_SIZE = 20;
+
+  function loadAll() {
+    loadSessions();
+    loadSystem();
+    loadFiles();
+    loadGitHub();
+    loadActivity();
+    loadQueue();
+    loadSysHistory();
+    loadWaitHistory();
+  }
+
+  // Try new API first, fallback to static JSON
+  function dashFetch(apiPath, staticPath) {
+    return fetch(apiPath)
+      .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .catch(() => fetch(staticPath).then(r => r.json()));
+  }
+
+  // Map source to static path prefix (symlinks in public/), fallback to API preview
+  function previewUrl(source, name) {
+    const enc = encodeURIComponent(name);
+    if (source === 'qa-latest') return '/qa-latest/' + enc;
+    if (source === 'qa-pages') return '/qa-pages/' + enc;
+    if (source === 'upload') return '/qa-uploads/' + enc;
+    if (source.startsWith('stress')) return '/qa-stress/' + enc;
+    return '/api/dashboard/files/preview/' + encodeURIComponent(source) + '/' + enc;
+  }
+
+  // Path helpers
+  function shortPath(p) {
+    if (!p) return '';
+    const parts = p.split('/');
+    return parts.length > 3 ? '.../' + parts.slice(-3).join('/') : p;
+  }
+
+  window.copyPath = function(p) {
+    function fallbackCopy() {
+      const ta = document.createElement('textarea');
+      ta.value = p;
+      ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      try {
+        document.execCommand('copy');
+        showToast('Copied: ' + p.split('/').pop(), 'ok');
+      } catch(e) {
+        showToast('Copy failed — select and Ctrl+C: ' + p.split('/').pop(), 'err');
+        prompt('Copy this path:', p);
+      }
+      document.body.removeChild(ta);
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(p).then(() => {
+        showToast('Copied: ' + p.split('/').pop(), 'ok');
+      }).catch(fallbackCopy);
+    } else {
+      fallbackCopy();
+    }
+  };
+
+  // Sessions
+  function loadSessions() {
+    dashFetch('/api/dashboard/sessions', '/dashboard-sessions.json')
+      .then(d => {
+        const sessions = d.sessions || [];
+        document.getElementById('statSessions').textContent = sessions.length;
+        const el = document.getElementById('sessionsList');
+        if (!sessions.length) { el.innerHTML = '<div style="color:#484f58;font-size:12px">No active sessions</div>'; return; }
+        el.innerHTML = sessions.map(s => `
+          <div class="sess-card">
+            <div class="sess-top">
+              <span class="pid">PID ${s.pid}</span>
+              <span class="status">alive</span>
+            </div>
+            <div class="sess-meta">
+              <span>Started: ${s.start || '—'}</span>
+              <span>MEM: ${s.mem_kb ? Math.round(s.mem_kb/1024)+'MB' : '—'}</span>
+              <span>CPU: ${s.cpu || '—'}%</span>
+            </div>
+          </div>
+        `).join('');
+      })
+      .catch(e => console.warn('dash:', e.message));
+  }
+
+  // System
+  function loadSystem() {
+    dashFetch('/api/dashboard/system', '/dashboard-system.json')
+      .then(d => {
+        // Services
+        const svcEl = document.getElementById('servicesList');
+        const svcs = d.services || {};
+        svcEl.innerHTML = Object.entries(svcs).map(([name, status]) => `
+          <div class="svc-row">
+            <span class="svc-dot ${status}"></span>
+            <span class="svc-name">${name}</span>
+            <span class="svc-label">${status}</span>
+          </div>
+        `).join('');
+
+        // Git
+        const gitEl = document.getElementById('gitInfo');
+        const g = d.git || {};
+        document.getElementById('statCommits').textContent = g.todayCommits || 0;
+        gitEl.innerHTML = `
+          <div class="git-row"><span>Branch</span><span class="val">${g.branch || '—'}</span></div>
+          <div class="git-row"><span>Last commit</span><span class="val" title="${g.lastCommit || ''}">${g.lastCommit || '—'}</span></div>
+          <div class="git-row"><span>Today</span><span class="val">${g.todayCommits || 0} commits</span></div>
+        `;
+
+        // Memory
+        if (d.mem) {
+          const usedGB = (d.mem.used / 1073741824).toFixed(1);
+          const totalGB = (d.mem.total / 1073741824).toFixed(1);
+          const pct = Math.round(d.mem.used / d.mem.total * 100);
+          gitEl.innerHTML += `<div class="git-row"><span>RAM</span><span class="val">${usedGB}/${totalGB} GB (${pct}%)</span></div>`;
+        }
+        if (d.disk) {
+          const usedGB = (d.disk.used / 1073741824).toFixed(1);
+          const totalGB = (d.disk.total / 1073741824).toFixed(1);
+          gitEl.innerHTML += `<div class="git-row"><span>Disk</span><span class="val">${usedGB}/${totalGB} GB</span></div>`;
+        }
+      })
+      .catch(e => console.warn('dash:', e.message));
+  }
+
+  // GitHub Actions
+  function loadGitHub() {
+    dashFetch('/api/dashboard/github', '/dashboard-github.json')
+      .then(d => {
+        const el = document.getElementById('ghActions');
+        const runs = d.runs || [];
+        if (!runs.length) { el.innerHTML = '<div style="color:#484f58;font-size:12px">No runs</div>'; return; }
+        el.innerHTML = runs.slice(0, 8).map(r => {
+          const icon = r.conclusion === 'success' ? '&#10003;' : r.conclusion === 'failure' ? '&#10007;' : '&#9679;';
+          const color = r.conclusion === 'success' ? '#3fb950' : r.conclusion === 'failure' ? '#f85149' : '#f0883e';
+          const time = new Date(r.created).toLocaleTimeString('th-TH', { hour:'2-digit', minute:'2-digit' });
+          return `<div class="gh-run">
+            <span class="gh-icon" style="color:${color}">${icon}</span>
+            <div class="gh-name">${r.name}<br><a href="${r.url}" target="_blank">#${r.id}</a></div>
+            <span class="gh-time">${time}</span>
+          </div>`;
+        }).join('');
+      })
+      .catch(e => console.warn('dash:', e.message));
+  }
+
+  // Files
+  function loadFiles() {
+    dashFetch('/api/dashboard/files', '/dashboard-files.json')
+      .then(d => {
+        allFiles = d.files || [];
+        const uploads = allFiles.filter(f => f.source === 'upload').length;
+        const screenshots = allFiles.length - uploads;
+        document.getElementById('statScreenshots').textContent = screenshots;
+        document.getElementById('statUploads').textContent = uploads;
+        renderGallery();
+      })
+      .catch(e => console.warn('dash:', e.message));
+  }
+
+  function getFiltered() {
+    if (currentFilter === 'all') return allFiles;
+    if (currentFilter === 'stress') return allFiles.filter(f => f.source.startsWith('stress'));
+    return allFiles.filter(f => f.source === currentFilter);
+  }
+
+  function renderGallery() {
+    const filtered = getFiltered();
+    const visible = filtered.slice(0, displayCount);
+
+    document.getElementById('fileCount').textContent = filtered.length + ' files';
+    const gallery = document.getElementById('gallery');
+    const emptyState = document.getElementById('emptyState');
+
+    if (!filtered.length) {
+      gallery.innerHTML = '';
+      emptyState.style.display = 'block';
+      updateLoadMore(0, 0);
+      return;
+    }
+    emptyState.style.display = 'none';
+
+    if (currentView === 'grid') {
+      gallery.className = 'gallery-grid';
+      gallery.innerHTML = visible.map((f, i) => {
+        const sizeStr = f.size < 1024 ? f.size + 'B' : f.size < 1048576 ? (f.size/1024).toFixed(0)+'KB' : (f.size/1048576).toFixed(1)+'MB';
+        const url = previewUrl(f.source, f.name);
+        const ePath = (f.path||'').replace(/'/g,"\\'");
+        return `<div class="gallery-item" onclick="openLightbox(${i})" data-idx="${i}">
+          <img src="${url}" alt="${f.name}" loading="lazy" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22140%22><rect fill=%22%23161b22%22 width=%22200%22 height=%22140%22/><text fill=%22%23484f58%22 x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 font-size=%2214%22>No preview</text></svg>'">
+          <div class="gi-info">
+            <div class="gi-name" title="${f.name}">${f.name}</div>
+            <div class="gi-meta"><span class="gi-source">${f.source}</span><span>${sizeStr}</span></div>
+          </div>
+          <div class="gi-path">
+            <span class="gi-path-text" title="${f.path||''}">${shortPath(f.path)}</span>
+            <button class="gi-copy" onclick="event.stopPropagation();copyPath('${ePath}')">Copy</button>
+          </div>
+        </div>`;
+      }).join('');
+    } else {
+      gallery.className = 'gallery-list';
+      gallery.innerHTML = visible.map((f, i) => {
+        const sizeStr = f.size < 1024 ? f.size + 'B' : f.size < 1048576 ? (f.size/1024).toFixed(0)+'KB' : (f.size/1048576).toFixed(1)+'MB';
+        const url = previewUrl(f.source, f.name);
+        const date = new Date(f.modified);
+        const dateStr = date.toLocaleDateString('th-TH',{day:'2-digit',month:'short'}) + ' ' + date.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+        const ePath = (f.path||'').replace(/'/g,"\\'");
+        return `<div class="list-item" onclick="openLightbox(${i})" data-idx="${i}">
+          <img src="${url}" alt="" loading="lazy" onerror="this.style.display='none'">
+          <span class="li-name" title="${f.name}">${f.name}</span>
+          <span class="li-path" title="${f.path||''}">${shortPath(f.path)}</span>
+          <button class="li-copy" onclick="event.stopPropagation();copyPath('${ePath}')">Copy</button>
+          <span class="li-source">${f.source}</span>
+          <span class="li-size">${sizeStr}</span>
+          <span class="li-date">${dateStr}</span>
+          ${f.source === 'upload' ? '<button class="li-del" onclick="event.stopPropagation();deleteFile(\''+f.name.replace(/'/g,"\\'")+'\')">&times;</button>' : ''}
+        </div>`;
+      }).join('');
+    }
+
+    updateLoadMore(visible.length, filtered.length);
+  }
+
+  function updateLoadMore(shown, total) {
+    let btn = document.getElementById('loadMoreBtn');
+    if (!btn) {
+      btn = document.createElement('button');
+      btn.id = 'loadMoreBtn';
+      btn.style.cssText = 'display:block;margin:16px auto;padding:8px 24px;background:#21262d;border:1px solid #30363d;color:#58a6ff;border-radius:6px;cursor:pointer;font-size:13px';
+      btn.onmouseover = () => { btn.style.borderColor='#58a6ff'; };
+      btn.onmouseout = () => { btn.style.borderColor='#30363d'; };
+      btn.onclick = () => { displayCount += PAGE_SIZE; renderGallery(); };
+      document.getElementById('gallery').parentElement.appendChild(btn);
+    }
+    if (shown >= total) {
+      btn.style.display = 'none';
+    } else {
+      btn.style.display = 'block';
+      btn.textContent = 'Load more (' + shown + ' / ' + total + ')';
+    }
+  }
+
+  // Filter buttons
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilter = btn.dataset.filter;
+      displayCount = PAGE_SIZE;
+      renderGallery();
+    });
+  });
+
+  // View toggle
+  document.querySelectorAll('.view-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentView = btn.dataset.view;
+      displayCount = PAGE_SIZE;
+      renderGallery();
+    });
+  });
+
+  // Lightbox
+  const lightbox = document.getElementById('lightbox');
+  const lbImg = document.getElementById('lbImg');
+  const lbName = document.getElementById('lbName');
+  let currentLbIndex = 0;
+
+  window.openLightbox = function(idx) {
+    const filtered = getFiltered();
+    if (!filtered[idx]) return;
+    currentLbIndex = idx;
+    const f = filtered[idx];
+    lbImg.src = previewUrl(f.source, f.name);
+    lbName.textContent = f.name + ' (' + f.source + ')';
+    document.getElementById('lbPath').textContent = f.path || '';
+    document.getElementById('lbCopy').onclick = () => copyPath(f.path || f.name);
+    lightbox.classList.add('show');
+  };
+
+  document.getElementById('lbClose').onclick = () => lightbox.classList.remove('show');
+  lightbox.addEventListener('click', e => { if (e.target === lightbox) lightbox.classList.remove('show'); });
+
+  // Keyboard nav in lightbox
+  document.addEventListener('keydown', e => {
+    if (!lightbox.classList.contains('show')) return;
+    if (e.key === 'Escape') lightbox.classList.remove('show');
+    const filtered = getFiltered();
+    if (e.key === 'ArrowRight' && currentLbIndex < filtered.length - 1) window.openLightbox(currentLbIndex + 1);
+    if (e.key === 'ArrowLeft' && currentLbIndex > 0) window.openLightbox(currentLbIndex - 1);
+  });
+
+  // Drop zone
+  // Infinite scroll — load more when near bottom
+  const contentDiv = document.querySelector('.content');
+  if (contentDiv) {
+    contentDiv.addEventListener('scroll', () => {
+      const { scrollTop, scrollHeight, clientHeight } = contentDiv;
+      if (scrollHeight - scrollTop - clientHeight < 200) {
+        const filtered = getFiltered();
+        if (displayCount < filtered.length) {
+          displayCount += PAGE_SIZE;
+          renderGallery();
+        }
+      }
+    });
+  }
+
+  const dropZone = document.getElementById('drop-zone');
+  const fileInput = dropZone.querySelector('input[type=file]');
+
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    handleFiles(e.dataTransfer.files);
+  });
+  fileInput.addEventListener('change', () => { handleFiles(fileInput.files); fileInput.value = ''; });
+
+  // Ctrl+V paste
+  document.addEventListener('paste', e => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    const files = [];
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        const f = item.getAsFile();
+        if (f) files.push(new File([f], 'paste_' + Date.now() + '.png', { type: f.type }));
+      }
+    }
+    if (files.length) handleFiles(files);
+  });
+
+  function handleFiles(fileListInput) {
+    for (const file of fileListInput) uploadFile(file);
+  }
+
+  function uploadFile(file) {
+    const fd = new FormData();
+    fd.append('file', file);
+    showToast('Uploading ' + file.name + '...', '');
+    fetch('/api/upload-file', { method: 'POST', body: fd })
+      .then(r => { if (!r.ok) throw new Error('Upload failed'); return r.json(); })
+      .then(() => { showToast('Uploaded: ' + file.name, 'ok'); loadFiles(); })
+      .catch(e => showToast('Error: ' + e.message, 'err'));
+  }
+
+  window.deleteFile = function(filename) {
+    if (!confirm('Delete ' + filename + '?')) return;
+    fetch('/api/uploaded-files/' + encodeURIComponent(filename), { method: 'DELETE' })
+      .then(r => { if (r.ok) { showToast('Deleted: ' + filename, 'ok'); loadFiles(); } })
+      .catch(e => showToast('Error: ' + e.message, 'err'));
+  };
+
+  function showToast(msg, type) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (type ? ' ' + type : '');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  // Activity chart
+  function loadActivity() {
+    fetch('/api/dashboard/activity')
+      .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(d => renderActivityChart(d.slots || []))
+      .catch(e => console.warn('dash:', e.message));
+  }
+
+  // System History Chart
+  function loadSysHistory() {
+    const hours = document.getElementById('sysHistoryRange')?.value || '1';
+    fetch('/api/dashboard/sys-history?hours=' + hours)
+      .then(r => r.ok ? r.json() : Promise.reject(r))
+      .then(d => renderSysChart(d.snapshots || []))
+      .catch(e => console.warn('sysHistory:', e.message || e));
+  }
+
+  // Range selector
+  const sysRange = document.getElementById('sysHistoryRange');
+  if (sysRange) sysRange.addEventListener('change', () => { loadSysHistory(); loadWaitHistory(); });
+
+  function renderSysChart(snaps) {
+    const canvas = document.getElementById('sysHistoryChart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.parentElement.offsetWidth - 24;
+    const H = 100;
+    canvas.width = W;
+    canvas.height = H;
+    ctx.clearRect(0, 0, W, H);
+
+    const padL = 35, padR = 10, padT = 10, padB = 20;
+    const cW = W - padL - padR, cH = H - padT - padB;
+    const rangeHours = parseInt(document.getElementById('sysHistoryRange')?.value || '1');
+
+    // Fixed time axis: now - rangeHours → now
+    const tNow = Date.now();
+    const tStart = tNow - rangeHours * 3600_000;
+
+    function timeToX(t) { return padL + ((t - tStart) / (tNow - tStart)) * cW; }
+
+    // Grid
+    ctx.strokeStyle = '#21262d'; ctx.lineWidth = 1; ctx.setLineDash([2,3]);
+    ctx.fillStyle = '#484f58'; ctx.font = '9px sans-serif'; ctx.textAlign = 'right';
+    for (const pct of [25, 50, 75, 100]) {
+      const y = padT + cH - (pct / 100) * cH;
+      ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W - padR, y); ctx.stroke();
+      ctx.fillText(pct + '%', padL - 3, y + 3);
+    }
+    ctx.setLineDash([]);
+
+    // Draw lines using fixed time axis
+    function drawLine(color, field, fill) {
+      ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+      let started = false;
+      snaps.forEach(s => {
+        const x = timeToX(new Date(s.time).getTime());
+        const y = padT + cH - (s[field] / 100) * cH;
+        if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+      if (fill && snaps.length > 0) {
+        const lastX = timeToX(new Date(snaps[snaps.length-1].time).getTime());
+        const firstX = timeToX(new Date(snaps[0].time).getTime());
+        ctx.lineTo(lastX, padT + cH); ctx.lineTo(firstX, padT + cH); ctx.closePath();
+        ctx.fillStyle = fill; ctx.fill();
+      }
+    }
+    if (snaps.length > 0) {
+      drawLine('#f85149', 'cpu', 'rgba(248,81,73,0.1)');
+      drawLine('#58a6ff', 'ram_pct', null);
+    }
+
+    // Time labels — fixed axis
+    ctx.fillStyle = '#484f58'; ctx.font = '9px sans-serif'; ctx.textAlign = 'center';
+    const labelCount = 8;
+    for (let i = 0; i <= labelCount; i++) {
+      const t = tStart + (i / labelCount) * (tNow - tStart);
+      const x = padL + (i / labelCount) * cW;
+      const d = new Date(t);
+      let label;
+      if (rangeHours >= 48) {
+        label = d.getDate() + '/' + (d.getMonth()+1) + ' ' + d.getHours().toString().padStart(2,'0') + ':00';
+      } else if (rangeHours >= 6) {
+        label = d.getHours().toString().padStart(2,'0') + ':00';
+      } else {
+        label = d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+      }
+      ctx.fillText(label, x, H - 3);
+    }
+
+    // No data indicator
+    if (!snaps.length) {
+      ctx.fillStyle = '#484f58'; ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('No data yet — collecting every 60s', W / 2, H / 2);
+    }
+
+    // Tooltip
+    const tooltip = document.getElementById('sysTooltip');
+    canvas.onmousemove = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      // Find closest snapshot
+      let closest = null, minDist = 20;
+      snaps.forEach(s => {
+        const sx = timeToX(new Date(s.time).getTime());
+        if (Math.abs(sx - mx) < minDist) { minDist = Math.abs(sx - mx); closest = s; }
+      });
+      if (closest) {
+        const d = new Date(closest.time);
+        const dateStr = rangeHours >= 24 ? d.getDate() + '/' + (d.getMonth()+1) + ' ' : '';
+        tooltip.innerHTML = '<b>' + dateStr + d.toLocaleTimeString('th-TH', {hour:'2-digit',minute:'2-digit'}) + '</b><br>' +
+          '<span style="color:#f85149">CPU: ' + closest.cpu + '%</span><br>' +
+          '<span style="color:#58a6ff">RAM: ' + closest.ram_pct + '% (' + closest.ram_used + ' GB)</span>';
+        tooltip.style.display = 'block';
+        tooltip.style.left = Math.min(e.clientX - rect.left + 10, W - 140) + 'px';
+        tooltip.style.top = (e.clientY - rect.top - 50) + 'px';
+      }
+    };
+    canvas.onmouseleave = () => { tooltip.style.display = 'none'; };
+  }
+
+  // Wait Time History
+  function loadWaitHistory() {
+    const hours = document.getElementById('sysHistoryRange')?.value || '1';
+    fetch('/api/dashboard/wait-history?hours=' + hours)
+      .then(r => r.ok ? r.json() : Promise.reject(r))
+      .then(d => renderWaitChart(d.entries || []))
+      .catch(e => console.warn('fetch:', e.message || e));
+  }
+
+  function renderWaitChart(entries) {
+    const canvas = document.getElementById('waitTimeChart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.parentElement.offsetWidth - 24;
+    const H = 80;
+    canvas.width = W;
+    canvas.height = H;
+    ctx.clearRect(0, 0, W, H);
+
+    if (!entries.length) {
+      ctx.fillStyle = '#484f58'; ctx.font = '11px sans-serif';
+      ctx.fillText('No job data yet — will populate as backtests/optimizations run', 20, H / 2);
+      return;
+    }
+
+    const padL = 30, padR = 10, padT = 8, padB = 18;
+    const cW = W - padL - padR, cH = H - padT - padB;
+    const maxDur = Math.max(...entries.map(e => e.duration), 1);
+
+    const colors = { 'task A': '#f0883e', 'task B': '#a371f7', 'task C': '#3fb950' };
+
+    // Grid
+    ctx.strokeStyle = '#21262d'; ctx.lineWidth = 1; ctx.setLineDash([2, 3]);
+    ctx.fillStyle = '#484f58'; ctx.font = '9px sans-serif'; ctx.textAlign = 'right';
+    for (let i = 0; i <= 3; i++) {
+      const val = Math.round(maxDur * i / 3);
+      const y = padT + cH - (i / 3) * cH;
+      ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W - padR, y); ctx.stroke();
+      ctx.fillText(val + 's', padL - 3, y + 3);
+    }
+    ctx.setLineDash([]);
+
+    // Plot dots
+    const timeMin = new Date(entries[0].time).getTime();
+    const timeMax = new Date(entries[entries.length - 1].time).getTime();
+    const timeSpan = timeMax - timeMin || 1;
+
+    entries.forEach(e => {
+      const x = padL + ((new Date(e.time).getTime() - timeMin) / timeSpan) * cW;
+      const y = padT + cH - (e.duration / maxDur) * cH;
+      const color = colors[e.type] || '#8b949e';
+      ctx.beginPath();
+      ctx.arc(x, y, 3, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+    });
+
+    // Time labels — smart format matching system monitor
+    ctx.fillStyle = '#484f58'; ctx.font = '9px sans-serif'; ctx.textAlign = 'center';
+    const wRangeH = parseInt(document.getElementById('sysHistoryRange')?.value || '1');
+    if (entries.length > 1) {
+      const fmt = (dt) => {
+        if (wRangeH >= 48) return dt.getDate() + '/' + (dt.getMonth()+1) + ' ' + dt.getHours().toString().padStart(2,'0') + ':00';
+        if (wRangeH >= 6) return dt.getHours().toString().padStart(2,'0') + ':00';
+        return dt.getHours().toString().padStart(2,'0') + ':' + dt.getMinutes().toString().padStart(2,'0');
+      };
+      ctx.fillText(fmt(new Date(entries[0].time)), padL + 20, H - 3);
+      ctx.fillText(fmt(new Date(entries[entries.length - 1].time)), W - padR - 20, H - 3);
+    }
+
+    // Tooltip
+    const tooltip = document.getElementById('waitTooltip');
+    canvas.onmousemove = (ev) => {
+      const rect = canvas.getBoundingClientRect();
+      const mx = ev.clientX - rect.left;
+      let closest = null, minDist = 20;
+      entries.forEach(e => {
+        const x = padL + ((new Date(e.time).getTime() - timeMin) / timeSpan) * cW;
+        if (Math.abs(x - mx) < minDist) { minDist = Math.abs(x - mx); closest = e; }
+      });
+      if (closest) {
+        const d = new Date(closest.time);
+        tooltip.innerHTML = '<b>' + d.toLocaleTimeString('th-TH', {hour:'2-digit',minute:'2-digit'}) + '</b> ' +
+          '<span style="color:' + (colors[closest.type]||'#8b949e') + '">' + closest.type + '</span>: ' +
+          closest.duration + 's';
+        tooltip.style.display = 'block';
+        tooltip.style.left = Math.min(mx + 10, W - 120) + 'px';
+        tooltip.style.top = '5px';
+      }
+    };
+    canvas.onmouseleave = () => { tooltip.style.display = 'none'; };
+  }
+
+  // System CPU/RAM
+  function loadQueue() {
+    fetch('/api/dashboard/system')
+      .then(r => r.json())
+      .then(sys => {
+        const el = document.getElementById('queueInfo');
+        if (!el) return;
+        const ramUsed = sys.mem ? (sys.mem.used/1073741824).toFixed(1) : 0;
+        const ramTotal = sys.mem ? (sys.mem.total/1073741824).toFixed(1) : 0;
+        const ramPct = sys.mem ? Math.round(sys.mem.used/sys.mem.total*100) : 0;
+        el.innerHTML = `
+          <div class="git-row"><span>RAM</span><span class="val">${ramUsed}/${ramTotal} GB (${ramPct}%)</span></div>
+          <div style="background:#21262d;border-radius:3px;height:6px;margin:4px 0 8px">
+            <div style="background:${ramPct > 80 ? '#f85149' : '#58a6ff'};height:100%;border-radius:3px;width:${Math.min(ramPct,100)}%"></div>
+          </div>
+          <div class="git-row"><span>Disk</span><span class="val">${sys.disk ? (sys.disk.used/1073741824).toFixed(1) : 0}/${sys.disk ? (sys.disk.total/1073741824).toFixed(0) : 0} GB</span></div>
+        `;
+      })
+      .catch(e => {
+        console.warn('system:', e.message || e);
+        const el = document.getElementById('queueInfo');
+        if (el) el.innerHTML = '<div style="color:#484f58;font-size:11px">System data unavailable</div>';
+      });
+  }
+
+  function renderActivityChart(slots) {
+    const canvas = document.getElementById('activityChart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.parentElement.offsetWidth - 24;
+    const H = 140;
+    canvas.width = W;
+    canvas.height = H;
+    ctx.clearRect(0, 0, W, H);
+    if (!slots.length) { ctx.fillStyle='#484f58'; ctx.font='11px sans-serif'; ctx.fillText('No activity data',W/2-40,H/2); return; }
+
+    const padL = 30, padR = 10, padT = 20, padB = 36;
+    const chartW = W - padL - padR;
+    const chartH = H - padT - padB;
+    const barW = chartW / slots.length;
+
+    // Find max value (use same scale for both)
+    const maxVal = Math.max(...slots.map(s => Math.max(s.commits, s.screenshots)), 1);
+    // Round up to nice number
+    const niceMax = maxVal <= 4 ? maxVal : Math.ceil(maxVal / Math.pow(10, Math.floor(Math.log10(maxVal)))) * Math.pow(10, Math.floor(Math.log10(maxVal)));
+    const yMax = Math.max(niceMax, 1);
+
+    // Day backgrounds (alternating)
+    let prevDay = '';
+    let dayToggle = false;
+    slots.forEach((s, i) => {
+      const d = new Date(s.time);
+      const dayKey = d.toDateString();
+      if (dayKey !== prevDay) { dayToggle = !dayToggle; prevDay = dayKey; }
+      if (dayToggle) {
+        ctx.fillStyle = 'rgba(255,255,255,0.03)';
+        ctx.fillRect(padL + i * barW, padT, barW, chartH);
+      }
+    });
+
+    // Grid lines + Y-axis labels
+    ctx.strokeStyle = '#21262d';
+    ctx.lineWidth = 1;
+    ctx.fillStyle = '#484f58';
+    ctx.font = '10px -apple-system,sans-serif';
+    ctx.textAlign = 'right';
+    const ySteps = Math.min(yMax, 4);
+    for (let step = 0; step <= ySteps; step++) {
+      const val = Math.round(yMax * step / ySteps);
+      const y = padT + chartH - (step / ySteps) * chartH;
+      ctx.beginPath();
+      ctx.setLineDash([2, 3]);
+      ctx.moveTo(padL, y);
+      ctx.lineTo(W - padR, y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillText(val.toString(), padL - 4, y + 3);
+    }
+
+    // Bars
+    slots.forEach((s, i) => {
+      const x = padL + i * barW;
+      const bw = barW * 0.35;
+
+      // Commits bar (blue)
+      if (s.commits > 0) {
+        const hC = (s.commits / yMax) * chartH;
+        ctx.fillStyle = '#58a6ff';
+        ctx.fillRect(x + barW * 0.1, padT + chartH - hC, bw, hC);
+      }
+      // Screenshots bar (green)
+      if (s.screenshots > 0) {
+        const hS = (s.screenshots / yMax) * chartH;
+        ctx.fillStyle = '#3fb950';
+        ctx.fillRect(x + barW * 0.5, padT + chartH - hS, bw, hS);
+      }
+    });
+
+    // X-axis: day labels + time ticks
+    ctx.fillStyle = '#484f58';
+    ctx.font = '10px -apple-system,sans-serif';
+    ctx.textAlign = 'center';
+    prevDay = '';
+    slots.forEach((s, i) => {
+      const d = new Date(s.time);
+      const dayKey = d.toDateString();
+      const h = d.getHours();
+      const x = padL + i * barW + barW / 2;
+
+      // Time labels (00:00, 06:00, 12:00, 18:00)
+      if (h % 6 === 0) {
+        ctx.fillStyle = '#484f58';
+        ctx.fillText(h.toString().padStart(2,'0') + ':00', x, H - 4);
+      }
+
+      // Day label at first slot of each day
+      if (dayKey !== prevDay) {
+        prevDay = dayKey;
+        ctx.fillStyle = '#8b949e';
+        ctx.font = '11px -apple-system,sans-serif';
+        ctx.fillText(d.getDate() + ' ' + d.toLocaleDateString('en', {month:'short'}), x + barW * 1.5, H - 18);
+        ctx.font = '10px -apple-system,sans-serif';
+        // Day separator line
+        ctx.strokeStyle = '#30363d';
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.moveTo(padL + i * barW, padT);
+        ctx.lineTo(padL + i * barW, padT + chartH);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    });
+
+    // Tooltip
+    const tooltip = document.getElementById('activityTooltip');
+    canvas.onmousemove = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const idx = Math.floor((mx - padL) / barW);
+      if (idx >= 0 && idx < slots.length) {
+        const s = slots[idx];
+        const d = new Date(s.time);
+        const endH = d.getHours() + 6;
+        tooltip.innerHTML = '<div style="font-weight:600;margin-bottom:2px">' +
+          d.getDate() + ' ' + d.toLocaleDateString('en',{month:'short'}) +
+          ' ' + d.getHours().toString().padStart(2,'0') + ':00\u2013' +
+          (endH % 24).toString().padStart(2,'0') + ':00</div>' +
+          '<div><span style="color:#58a6ff">\u25A0</span> commits: ' + s.commits + '</div>' +
+          '<div><span style="color:#3fb950">\u25A0</span> screenshots: ' + s.screenshots + '</div>';
+        tooltip.style.display = 'block';
+        tooltip.style.left = Math.min(mx + 10, W - 150) + 'px';
+        tooltip.style.top = (e.clientY - rect.top - 60) + 'px';
+      }
+    };
+    canvas.onmouseleave = () => { tooltip.style.display = 'none'; };
+  }
+})();
+</script>
+</body>
+</html>

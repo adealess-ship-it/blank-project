@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Home — Blank Project</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0d1117;color:#e6edf3;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;display:flex;flex-direction:column}
+
+/* Accent bar */
+.accent-bar{height:3px;background:linear-gradient(90deg,#58a6ff 0%,#3fb950 40%,#f0883e 70%,#f85149 100%)}
+
+/* Layout: push content to the right */
+.main-layout{display:flex;flex:1}
+.spacer{flex:1}
+.content{width:420px;min-width:320px;padding:40px 32px;display:flex;flex-direction:column;justify-content:center;border-left:1px solid #21262d;background:#161b22}
+
+/* Brand */
+.brand{margin-bottom:32px}
+.brand h1{color:#58a6ff;font-size:28px;font-weight:700}
+.brand p{color:#8b949e;font-size:14px;margin-top:6px}
+
+/* Info section */
+.info{margin-bottom:32px}
+.info p{color:#8b949e;font-size:13px;line-height:1.7}
+
+/* Status indicator */
+.status-row{display:flex;align-items:center;gap:8px;margin-bottom:20px;padding:10px 14px;background:#0d1117;border:1px solid #21262d;border-radius:8px}
+.status-dot{width:8px;height:8px;border-radius:50%;background:#3fb950;flex-shrink:0}
+.status-text{font-size:12px;color:#8b949e}
+.status-text strong{color:#3fb950}
+
+/* Buttons */
+.btn-group{display:flex;flex-direction:column;gap:10px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:none;border-radius:8px;font-size:14px;font-weight:600;padding:14px;cursor:pointer;transition:all .15s;text-decoration:none}
+.btn-primary{background:#238636;color:#fff}
+.btn-primary:hover{background:#2ea043}
+.btn-secondary{background:#21262d;color:#8b949e;border:1px solid #30363d}
+.btn-secondary:hover{background:#30363d;color:#e6edf3}
+
+/* Footer */
+.footer{padding:16px 32px;border-top:1px solid #21262d;text-align:right}
+.footer span{font-size:11px;color:#484f58}
+
+/* Responsive */
+@media(max-width:768px){
+  .content{width:100%;border-left:none}
+  .spacer{display:none}
+}
+</style>
+</head>
+<body>
+<div class="accent-bar"></div>
+<div class="main-layout">
+  <div class="spacer"></div>
+  <div class="content">
+    <div class="brand">
+      <h1>Blank Project</h1>
+      <p>Starter Template</p>
+    </div>
+
+    <div class="status-row">
+      <div class="status-dot" id="statusDot"></div>
+      <div class="status-text">Server: <strong id="statusLabel">checking...</strong></div>
+    </div>
+
+    <div class="info">
+      <p>Welcome to the blank project starter. Use this template to build your next application.</p>
+    </div>
+
+    <div class="btn-group">
+      <a href="/home/adminDev" class="btn btn-primary">Admin Login</a>
+    </div>
+  </div>
+</div>
+<div class="footer">
+  <span>Blank Project Template</span>
+</div>
+<script>
+(async () => {
+  const dot = document.getElementById('statusDot');
+  const label = document.getElementById('statusLabel');
+  try {
+    const res = await fetch('/api/health', { timeout: 5000 });
+    if (res.ok) {
+      dot.style.background = '#3fb950';
+      label.textContent = 'online';
+      label.style.color = '#3fb950';
+    } else {
+      throw new Error('not ok');
+    }
+  } catch (e) {
+    dot.style.background = '#f0883e';
+    label.textContent = 'offline';
+    label.style.color = '#f0883e';
+    console.warn('Health check:', e.message);
+  }
+})();
+</script>
+</body>
+</html>
