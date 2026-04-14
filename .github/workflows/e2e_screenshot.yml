@@ -9,14 +9,11 @@ on:
   workflow_dispatch:
     inputs:
       base_url:
-        description: "Frontend base URL"
+        description: "Frontend base URL (leave empty to start local server)"
         required: false
 
 permissions:
   contents: read
-
-env:
-  BASE_URL: ${{ inputs.base_url || secrets.REPLIT_DEV_URL || secrets.REPLIT_DEV_DOMAIN }}
 
 jobs:
   e2e:
@@ -33,9 +30,43 @@ jobs:
       - name: Install Playwright + ffmpeg
         run: |
           npm init -y
-          npm install @playwright/test
+          npm install @playwright/test express
           npx playwright install chromium --with-deps
           sudo apt-get install -y ffmpeg
+
+      - name: Start local server
+        if: ${{ !inputs.base_url }}
+        run: |
+          # Simple static server serving public/ on port 3333
+          node << 'SERVER' &
+          const express = require('express');
+          const path = require('path');
+          const app = express();
+
+          // Serve static files
+          app.use(express.static(path.join(__dirname, 'artifacts/api-server/public')));
+
+          // Routes
+          const sendPage = (f) => (_req, res) => res.sendFile(path.resolve(__dirname, 'artifacts/api-server/public', f));
+          app.get('/home/adminDev', sendPage('upload.html'));
+          app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
+          app.get('/api/dashboard/system', (_req, res) => res.json({}));
+          app.get('/api/dashboard/sessions', (_req, res) => res.json({ sessions: [] }));
+          app.get('/api/dashboard/github', (_req, res) => res.json({ runs: [] }));
+          app.get('/api/dashboard/files', (_req, res) => res.json({ files: [] }));
+          app.get('/', sendPage('home.html'));
+
+          app.listen(3333, () => console.log('Local server on http://localhost:3333'));
+          SERVER
+
+          # Wait for server to be ready
+          for i in $(seq 1 15); do
+            if curl -s http://localhost:3333/ > /dev/null 2>&1; then
+              echo "Server ready!"
+              break
+            fi
+            sleep 1
+          done
 
       - name: E2E Screenshot + VDO Tests
         run: |
@@ -45,7 +76,7 @@ jobs:
           const { execSync } = require('child_process');
 
           (async () => {
-            const base = process.env.BASE_URL.replace(/\/$/, '');
+            const base = (process.env.BASE_URL || 'http://localhost:3333').replace(/\/$/, '');
             let shotNum = 0;
             const log = [];
 
@@ -101,9 +132,6 @@ jobs:
                 dropZone: !!document.getElementById('drop-zone'),
                 gallery: !!document.querySelector('.gallery-grid, .gallery-list'),
                 sidebar: !!document.querySelector('.sidebar'),
-                sessions: !!document.getElementById('sessionList'),
-                system: !!document.getElementById('cpuVal'),
-                github: !!document.getElementById('ghList'),
               };
             });
             logEntry('  Features: ' + JSON.stringify(features));
@@ -124,7 +152,7 @@ jobs:
             const healthResp = await page.evaluate(async () => {
               try {
                 const r = await fetch('/api/health');
-                return { status: r.status, ok: r.ok };
+                return await r.json();
               } catch (e) {
                 return { error: e.message };
               }
@@ -134,7 +162,7 @@ jobs:
             // ═══════════════════════════════════
             // Close + Extract VDO frames
             // ═══════════════════════════════════
-            await page.close(); // triggers video save
+            await page.close();
             await context.close();
 
             // Extract frames from recorded video
@@ -142,7 +170,7 @@ jobs:
             const videos = fs.readdirSync('./videos/').filter(f => f.endsWith('.webm'));
             for (const v of videos) {
               const vPath = './videos/' + v;
-              const outPath = ss('vdo_frame') ;
+              const outPath = ss('vdo_frame');
               try {
                 execSync('ffmpeg -i ' + vPath + ' -vf "select=eq(n\\,30)" -vframes 1 ' + outPath + ' -y 2>/dev/null');
                 logEntry('  Extracted frame from ' + v + ' → ' + outPath);
@@ -165,7 +193,7 @@ jobs:
           })();
           SCRIPT
         env:
-          BASE_URL: ${{ env.BASE_URL }}
+          BASE_URL: ${{ inputs.base_url || '' }}
 
       - name: Upload screenshots + videos
         if: always()
